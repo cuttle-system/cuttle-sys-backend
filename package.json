@@ -1,0 +1,37 @@
+{
+  "name": "cuttle-sys-backend",
+  "version": "1.0.0",
+  "description": "Cuttle system web UI backend",
+  "main": "index.js",
+  "directories": {
+    "example": "examples",
+    "lib": "lib",
+    "test": "test"
+  },
+  "dependencies": {
+    "chai": "^4.2.0"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/cuttle-system/cuttle-sys-backend.git"
+  },
+  "keywords": [
+    "web",
+    "cuttle-system",
+    "javascript",
+    "websockets",
+    "nodejs"
+  ],
+  "author": "Michael Vietluzhskykh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cuttle-system/cuttle-sys-backend/issues"
+  },
+  "homepage": "https://github.com/cuttle-system/cuttle-sys-backend#readme"
+}
