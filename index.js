@@ -11,13 +11,13 @@ const webSocketsServerPort = 1337;
 const webSocketServer = require('websocket').server;
 
 if (!Db.db().get('ssl').get('disable').value()) {
+    console.log('Enabling https');
     var http = require('https');
 } else {
     var http = require('http');
 }
 
-const crypto = require('crypto');
-const fs = require("fs");
+const fs = require('fs');
 
 /**
  * Global variables
@@ -40,21 +40,17 @@ const templates = [
     {id: 'ecmascript-5->php-7.1.0', name: 'EcmaScript 5 to PHP 7.1.0'}
 ];
 
-/**
- * HTTP server
- */
-var server = http.createServer(function(request, response) {
 
-    // Not important for us. We're writing WebSocket server,
-    // not HTTP server
-});
 
 if (!Db.db().get('ssl').get('disable').value()) {
     const privateKey = fs.readFileSync(Db.db().get('ssl').get('private').value()).toString();
     const certificate = fs.readFileSync(Db.db().get('ssl').get('certificate').value()).toString();
 
-    const credentials = crypto.createCredentials({key: privateKey, cert: certificate});
-    server.setSecure(credentials);
+    const httpsOptions = {key: privateKey, cert: certificate};
+
+    var server = http.createServer(httpsOptions, function(request, response) {});
+} else {
+    var server = http.createServer(function(request, response) {});
 }
 
 server.listen(webSocketsServerPort, function() {
