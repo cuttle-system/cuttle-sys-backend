@@ -9,12 +9,16 @@
     "test": "test"
   },
   "dependencies": {
-    "chai": "^4.2.0"
+    "chai": "^4.2.0",
+    "lowdb": "^1.0.0",
+    "shortid": "^2.2.14",
+    "websocket": "^1.0.28"
   },
   "devDependencies": {
     "mocha": "^5.2.0"
   },
   "scripts": {
+    "server": "node index.js",
     "test": "mocha"
   },
   "repository": {
