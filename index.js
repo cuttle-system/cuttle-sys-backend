@@ -9,7 +9,12 @@ process.title = 'cuttle-sys-backend';
 const webSocketsServerPort = 1337;
 // websocket and http servers
 const webSocketServer = require('websocket').server;
-const http = require('http');
+
+if (!Db.db().get('ssl').get('disable').value()) {
+    var http = require('https');
+} else {
+    var http = require('http');
+}
 
 const crypto = require('crypto');
 const fs = require("fs");
