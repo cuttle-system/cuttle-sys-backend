@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "chai": "^4.2.0",
+    "lodash": "^4.17.11",
     "lowdb": "^1.0.0",
     "shortid": "^2.2.14",
     "websocket": "^1.0.28"

@@ -2,6 +2,8 @@
 
 const Connection = require('./lib/connection');
 const Db = require('./lib/db');
+const Runner = require('./lib/runner');
+const _ = require("lodash");
 
 // Optional. You will see this name in eg. 'ps' or 'top' command
 process.title = 'cuttle-sys-backend';
@@ -10,22 +12,15 @@ const webSocketsServerPort = 1337;
 // websocket and http servers
 const webSocketServer = require('websocket').server;
 
-if (!Db.db().get('ssl').get('disable').value()) {
-    console.log('Enabling https');
-    var http = require('https');
-} else {
-    var http = require('http');
-}
-
 const fs = require('fs');
 
 /**
  * Global variables
  */
 // latest 100 messages
-var history = [ ];
+let history = [];
 // list of currently connected clients (users)
-var clients = [ ];
+let clients = [];
 /**
  * Helper function for escaping input strings
  */
@@ -35,21 +30,32 @@ function htmlEntities(str) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-const templates = [
-    {id: 'php-7.1.0->ecmascript-5', name: 'PHP 7.1.0 to EcmaScript 5'},
-    {id: 'ecmascript-5->php-7.1.0', name: 'EcmaScript 5 to PHP 7.1.0'}
-];
+function getTemplates() {
+    let templates = [];
+    let templatePath = Db.db().get('template_path').value();
+    fs.readdirSync(templatePath).forEach(file => {
+        templates.push({id: file, name: fs.readFileSync(templatePath + '/' + file + '/template_name.txt').toString()});
+    });
+    return templates;
+}
 
-
+function getEditableFiles(connectionId) {
+    let files = {};
+    // TODO
+    return files;
+}
 
 if (!Db.db().get('ssl').get('disable').value()) {
+    let https = require('https');
+
     const privateKey = fs.readFileSync(Db.db().get('ssl').get('private').value()).toString();
     const certificate = fs.readFileSync(Db.db().get('ssl').get('certificate').value()).toString();
 
     const httpsOptions = {key: privateKey, cert: certificate};
 
-    var server = http.createServer(httpsOptions, function(request, response) {});
+    var server = https.createServer(httpsOptions, function(request, response) {});
 } else {
+    let http = require('http');
     var server = http.createServer(function(request, response) {});
 }
 
@@ -62,9 +68,6 @@ server.listen(webSocketsServerPort, function() {
  * WebSocket server
  */
 var wsServer = new webSocketServer({
-    // WebSocket server is tied to a HTTP server. WebSocket
-    // request is just an enhanced HTTP request. For more info
-    // http://tools.ietf.org/html/rfc6455#page-6
     httpServer: server
 });
 // This callback function is called every time someone
@@ -86,23 +89,35 @@ wsServer.on('request', function(request) {
     }
     // user sent some message
     connection.on('message', function (message) {
-        if (message.type === 'utf8') { // accept only text
-            // first message sent by user is their name
-            // remember user name
+        if (message.type === 'utf8') {
             console.log(message.utf8Data);
+
             let messageObject = JSON.parse(message.utf8Data);
             if (messageObject.type === 'create') {
-                const userConnection = new Connection();
+                const templates = getTemplates();
+                if (_.find(templates, {id: messageObject.template})) {
+                    const templatePath = Db.db().get('template_path').value();
+                    const rootPath = Db.db().get('root_path').value();
+                    const userConnection = new Connection();
+                    Runner.execute(`cp -R ${templatePath}/${messageObject.template} ${rootPath}/${userConnection.getId()}`,
+                        (stdout, stderr) => {
+                            connection.sendUTF(JSON.stringify({type: 'create', connectionId: userConnection.getId()}));
+                        });
+                } else {
+                    connection.sendUTF(JSON.stringify({type: 'create', error: true}));
+                }
                 // messageObject.templateId;
-                // npm copy from template
-                connection.sendUTF(JSON.stringify({type: 'create', connectionId: userConnection.getId()}));
+                // npm copy from templates
             } else if (messageObject.type === 'getFilesList') {
                 const userConnection = new Connection(messageObject.connectionId);
                 connection.sendUTF(
-                    JSON.stringify({type: 'getFilesList', connectionId: userConnection.getId(), files: []}));
+                    JSON.stringify({
+                        type: 'getFilesList',
+                        connectionId: userConnection.getId(),
+                        files: getEditableFiles(userConnection.getId())}));
             } else if (messageObject.type === 'getTemplates') {
                 connection.sendUTF(
-                    JSON.stringify({type: 'getTemplates', templates}));
+                    JSON.stringify({type: 'getTemplates', templates: getTemplates()}));
             } else {
                 console.error('Failed to dispatch message: ' + messageObject.type);
             }
@@ -132,13 +147,6 @@ wsServer.on('request', function(request) {
         console.log((new Date()) + " Peer "
             + connection + " disconnected.");
 
-        // if (userName !== false && userColor !== false) {
-        //     console.log((new Date()) + " Peer "
-        //         + connection.remoteAddress + " disconnected.");
-        //     // remove user from the list of connected clients
-            clients.splice(index, 1);
-        //     // push back user's color to be reused by another user
-        //     colors.push(userColor);
-        // }
+        clients.splice(index, 1);
     });
 });
