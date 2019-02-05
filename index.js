@@ -39,12 +39,6 @@ function getTemplates() {
     return templates;
 }
 
-function getEditableFiles(connectionId) {
-    let files = {};
-    // TODO
-    return files;
-}
-
 if (!Db.db().get('ssl').get('disable').value()) {
     let https = require('https');
 
@@ -108,18 +102,36 @@ wsServer.on('request', function(request) {
                 }
                 // messageObject.templateId;
                 // npm copy from templates
-            } else if (messageObject.type === 'getFilesList') {
-                const userConnection = new Connection(messageObject.connectionId);
-                connection.sendUTF(
-                    JSON.stringify({
-                        type: 'getFilesList',
-                        connectionId: userConnection.getId(),
-                        files: getEditableFiles(userConnection.getId())}));
             } else if (messageObject.type === 'getTemplates') {
                 connection.sendUTF(
                     JSON.stringify({type: 'getTemplates', templates: getTemplates()}));
             } else {
-                console.error('Failed to dispatch message: ' + messageObject.type);
+                const userConnection = new Connection(messageObject.connectionId);
+                if (!userConnection.isConnected()) {
+                    connection.sendUTF(
+                        JSON.stringify({
+                            type: 'error',
+                            message: 'Connection was not found: ' + messageObject.connectionId,
+                        }));
+                } else {
+                    if (messageObject.type === 'getFilesList') {
+                        connection.sendUTF(
+                            JSON.stringify({
+                                type: 'getFilesList',
+                                connectionId: userConnection.getId(),
+                                filesList: userConnection.getEditableFiles()
+                            }));
+                    } else if (messageObject.type === 'updateFiles') {
+                        updateFiles(messageObject.files);
+                        connection.sendUTF(JSON.stringify());
+                    } else {
+                        connection.sendUTF(
+                            JSON.stringify({
+                                type: 'error',
+                                message: 'Failed to dispatch message: ' + messageObject.type,
+                            }));
+                    }
+                }
             }
             // } else { // log and broadcast the message
             //     console.log((new Date()) + ' Received Message from '
