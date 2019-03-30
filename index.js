@@ -121,6 +121,16 @@ wsServer.on('request', function(request) {
                                 connectionId: userConnection.getId(),
                                 filesList: userConnection.getEditableFiles()
                             }));
+                    } else if (messageObject.type === 'getFiles') {
+                        connection.sendUTF(
+                            JSON.stringify({
+                                type: 'getFiles',
+                                connectionId: userConnection.getId(),
+                                files: {
+                                    translatedFiles: messageObject.filesList.translatedFiles.map(file => userConnection.getTranslatedFileContent(file)),
+                                    configurationFiles: []
+                                }
+                            }));
                     } else if (messageObject.type === 'updateFiles') {
                         updateFiles(messageObject.files);
                         connection.sendUTF(JSON.stringify());
